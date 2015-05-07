@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>Skybox (Three.js)</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+</head>
+<body>
+
+<script src="js/three.min.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/THREEx.KeyboardState.js"></script>
+<script src="js/THREEx.FullScreen.js"></script>
+<script src="js/THREEx.WindowResize.js"></script>
+<script src="js/StereoEffect.js"></script>
+<script src="js/DeviceOrientationControls.js"></script>
+<script src="js/DetectScreenSize.js"></script>
+<script src="http://mrdoob.github.io/three.js/examples/js/controls/FirstPersonControls.js"></script>
+
+<div id="parent">
+<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+</div>
+
+<!-- <audio id="audio">
+    <source src="Canyonero.mp3" type="audio/mp3" />
+</audio> -->
+
+<script>
+/*
+  Three.js "tutorials by example"
+  Author: Lee Stemkoski
+  Date: July 2013 (three.js v59dev)
+*/
+// MAIN
+// standard global variables
+var container, scene, camera, renderer, controls, stats;
+var planets = [], radius = 3, segments =32, startX = 0, startY = 5, startZ = 15;
+var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+// custom global variables
+var cube;
+var hasOrientation = function(evt) {
+  if (!evt.alpha) {
+    return;
+  }
+  window.removeEventListener('deviceorientation', hasOrientation, false);
+  controls = new THREE.DeviceOrientationControls( camera );
+  controls.connect();
+  controls.movementSpeed = 100;
+  controls.rollSpeed = 0.05;
+};
+
+
+init();
+animate();
+// FUNCTIONS    
+function init() 
+{
+  // var count = 0;
+  // document.body.style.cssText = 'font: 600 12pt monospace; margin: 0; overflow: hidden; ' ;
+
+  //   var info = document.body.appendChild( document.createElement( 'div' ) );
+
+  //   info.style.cssText = 'left: 10px; position: absolute; ';
+
+  //   info.innerHTML = '<h3>' + document.title + '</h3>' +
+  //     '<div id=msg>counter: </div>';
+
+  //   info.innerHTML = innerHTML.innerHTML + count;
+
+  // var audioSprite = document.getElementById('audio');
+
+  // // sprite data
+  // var spriteData = {
+  //     simpsons: {
+  //         start: 0,
+  //         length: 30
+  //     }
+  // };
+
+  // // current sprite being played
+  // var currentSprite = {};
+
+  // // time update handler to ensure we stop when a sprite is complete
+  // var onTimeUpdate = function() {
+  //     if (this.currentTime >= currentSprite.start + currentSprite.length) {
+  //         this.pause();
+  //     }
+  // };
+
+  // audioSprite.addEventListener('timeupdate', onTimeUpdate, false);
+
+  // // in mobile Safari, the first time this is called will load the audio. Ideally, we'd load the audio file completely before doing this.
+  // var playSprite = function(id) {
+  //     if (spriteData[id] && spriteData[id].length) {
+  //         currentSprite = spriteData[id];
+  //         audioSprite.currentTime = currentSprite.start;
+  //         audioSprite.play();
+  //     }
+  // };
+
+  // playSprite('simpsons');
+
+  // SCENE
+  var geometry, material, mesh;
+  scene = new THREE.Scene();
+  // CAMERA
+  var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+  var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+  camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+  scene.add(camera);
+  camera.position.set(startX,startY,startZ);
+  camera.lookAt(scene.position);  
+  // RENDERER
+  if ( Detector.webgl )
+    renderer = new THREE.WebGLRenderer( {antialias:true} );
+  else{
+    renderer = new THREE.CanvasRenderer(); 
+    Detector.addGetWebGLMessage(webglEl);
+  }
+  renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+  container = document.getElementById( 'ThreeJS' );
+  container.appendChild( renderer.domElement );
+  // EVENTS
+  THREEx.WindowResize(renderer, camera);
+  THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+  // CONTROLS
+
+
+  // LIGHT
+  var light = new THREE.PointLight(0xffffff);
+  light.position.set(0,500,500);
+  scene.add(light);
+  
+  //FLOOR
+  // var floorTexture = new THREE.ImageUtils.loadTexture( 'images/checkerboard.jpg' );
+  // floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+  // floorTexture.repeat.set( 10, 10 );
+  // var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+  // var floorGeometry = new THREE.PlaneGeometry(100, 100, 10, 10);
+  // var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+  // floor.position.y = 0;
+  // floor.rotation.x = Math.PI / 2;
+  // scene.add(floor);
+
+  controls = new THREE.FirstPersonControls( camera );
+//    controls.movementSpeed = 10;
+//    controls.lookSpeed = 0.05;
+    effect = new THREE.StereoEffect( renderer );
+    effect.separation = 0.2;
+    effect.targetDistance = 50;
+    effect.setSize( window.innerWidth, window.innerHeight );
+
+window.setTimeout("endGame", 45000);
+  
+window.addEventListener('deviceorientation', hasOrientation, false);
+    window.addEventListener( 'touchend', function () {
+      if ( isFullscreen === false ) {
+        document.body.webkitRequestFullscreen();
+        isFullscreen = true;
+      } else {
+        document.webkitExitFullscreen();
+        isFullscreen = false;
+      }
+    } );
+    window.addEventListener( 'resize', function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      effect.setSize( window.innerWidth, window.innerHeight );
+    }, false );
+    controls.autoForward = false;
+
+  ////////////
+  // CUSTOM //
+  ////////////
+  
+  // axes
+  // var axes = new THREE.AxisHelper(100);
+  // scene.add( axes );
+  
+  // var imagePrefix = "images/simpsons-";
+  var imagePrefix = "images/simpsons-";
+  var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+  var imageSuffix = ".png";
+  var skyGeometry = new THREE.CubeGeometry( 5000, 5000, 5000 ); 
+  
+  var materialArray = [];
+  for (var i = 0; i < 6; i++)
+    materialArray.push( new THREE.MeshBasicMaterial({
+      map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+      side: THREE.BackSide
+    }));
+  var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+  var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+  scene.add( skyBox );
+
+  // for(var i=0; i <=5; i++){
+  //   var rand = (Math.random() * 2) - 1;
+  //   var x = startX + rand * (maxDist - minDist) + minDist;
+  //   var z = startZ + rand * (maxDist - minDist) + minDist;
+  //   var earth = createEarth(radius, segments, x, z);
+  //   earth.position.y = startY + 1;
+  //   planets.push(earth);
+  //   scene.add(earth);
+  // }
+
+
+    var earth = createEarth(radius, segments, 14, 14);
+    earth.position.y = startY + 2;
+    planets.push(earth);
+    scene.add(earth);
+
+    var mercury = createMercury(radius, segments, -125,-70);
+    mercury.position.y = startY + 2;
+    planets.push(mercury);
+    scene.add(mercury);
+
+    var jupiter = createJupiter(radius, segments, 40, -15);
+    jupiter.position.y = startY + 2;
+    planets.push(jupiter);
+    scene.add(jupiter);
+
+    var mars = createMars(radius, segments, 92, 12);
+    mars.position.y = startY + 2;
+    planets.push(mars);
+    scene.add(mars);
+
+    var mars2 = createMars(radius, segments, 500, 100);
+    mars2.position.y = startY + 2;
+    planets.push(mars2);
+    scene.add(mars2);
+}
+
+function endGame(){
+  var parent = document.getElementById( 'parent' );
+  parent.css("background-color", "black");
+}
+
+function animate() 
+{
+    for(i = 0; i < planets.length;i++){
+      planets[i].rotation.y += .05;
+
+      //console.log(planets[i].position)/*
+      var planetX = planets[i].position.x
+      var planetZ = planets[i].position.z
+      
+      var x = camera.position.x;
+      var z = camera.position.z;
+
+      var xDiff = planetX - x;
+      var zDiff = planetZ - z;
+
+      if(Math.sqrt(xDiff*xDiff + zDiff*zDiff) < 2+ radius ){
+        console.log("intersection")
+        scene.remove(planets[i]);
+
+        //counter.innerHTML = "counter: " + count;
+
+        planets.filter(function(p){
+          if(p!=planets[i])
+              return p;
+        })
+
+      }
+
+    }
+
+    requestAnimationFrame( animate );
+    controls.update( clock.getDelta() );
+    if ( controls.orientationQuaternion !== undefined ) {
+      if ( controls.gamma < 1 && controls.gamma > 0 ) { controls.autoForward = true; }
+      if ( controls.gamma > -1 && controls.gamma < 0 ) { controls.autoForward = false; }
+      effect.render( scene, camera );
+    } else {
+      renderer.render( scene, camera );
+    }
+}
+function update()
+{
+  if ( keyboard.pressed("z") ) 
+  { 
+    // do something
+  }
+  
+  controls.update();
+  stats.update();
+}
+function render() 
+{
+  renderer.render( scene, camera );
+
+}
+
+function createEarth(radius, segments, xvar, zvar) {
+    var temp = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, segments, segments),
+      new THREE.MeshPhongMaterial({
+        map:         THREE.ImageUtils.loadTexture('images/2_no_clouds_4k.jpg'),
+        bumpMap:     THREE.ImageUtils.loadTexture('images/elev_bump_4k.jpg'),
+        bumpScale:   0.005,
+        specularMap: THREE.ImageUtils.loadTexture('images/water_4k.png'),
+        specular:    new THREE.Color('grey')                
+      })
+    );
+    temp.position.x = xvar;
+    temp.position.z = zvar;
+
+    return temp;
+    
+  }
+
+function createMars(radius, segments, xvar, zvar) {
+    var temp = new THREE.Mesh(
+      new THREE.SphereGeometry(radius, segments, segments),
+      new THREE.MeshPhongMaterial({
+        map : THREE.ImageUtils.loadTexture('images/marsmap1k.jpg'),
+      bumpMap : THREE.ImageUtils.loadTexture('images/marsbump1k.jpg'),
+      bumpScale: 0.05           
+      })
+    );
+    temp.position.x = xvar;
+    temp.position.z = zvar;
+
+    return temp;
+
+  }
+
+  function createClouds(radius, segments, xvar, zvar) {
+    var temp = new THREE.Mesh(
+      new THREE.SphereGeometry(radius + 0.003, segments, segments),     
+      new THREE.MeshPhongMaterial({
+        map:         THREE.ImageUtils.loadTexture('images/fair_clouds_4k.png'),
+        transparent: true
+      })
+    );  
+
+    temp.position.x = xvar;
+    temp.position.z = zvar;
+
+    return temp;
+  }
+
+function createMercury(radius, segments, xvar, zvar){
+  var temp = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, segments, segments),
+      new THREE.MeshPhongMaterial({
+    map : THREE.ImageUtils.loadTexture('images/mercurymap.jpg'),
+    bumpMap : THREE.ImageUtils.loadTexture('images/mercurybump.jpg'),
+    bumpScale: 0.005,
+  })
+      );
+  
+    temp.position.x = xvar;
+    temp.position.z = zvar;
+  return temp ;
+}
+
+function createJupiter(radius, segments, xvar, zvar){
+  var temp = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, segments, segments),
+      new THREE.MeshPhongMaterial({
+    map : THREE.ImageUtils.loadTexture('images/jupitermap.jpg'),
+    bumpMap : THREE.ImageUtils.loadTexture('images/jupitermap.jpg'),
+    bumpScale: 0.02,
+  })
+      );
+  
+    temp.position.x = xvar;
+    temp.position.z = zvar;
+  return temp 
+}
+
+</script>
+
+</body>
+</html>
